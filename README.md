@@ -72,7 +72,7 @@ Or visit: `https://your-instance.posthog.com/settings/user-api-keys`
 
 ```bash
 # Clone and build
-git clone https://github.com/nova-research/posthog-mcp-server.git
+git clone https://github.com/friendlygeorge/posthog-mcp-server.git
 cd posthog-mcp-server
 npm install
 npm run build
