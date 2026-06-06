@@ -1,0 +1,62 @@
+# GitHub Actions: Publish MCP Server to npm + Official Registry
+# 
+# Setup per repo:
+#   1. Add NPM_TOKEN secret to repo Settings → Secrets → Actions
+#   2. Enable "Allow GitHub Actions to create and approve pull requests" 
+#      in repo Settings → Actions → General → Workflow permissions
+#   3. Push to main or trigger manually
+#
+# This workflow handles:
+#   - TypeScript build
+#   - npm publish (public)
+#   - Official MCP Registry publish (via GitHub OIDC)
+
+name: Publish MCP Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC auth with MCP Registry
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Publish to Official MCP Registry
+        run: |
+          mcp-publisher login github-oidc
+          mcp-publisher init
+          mcp-publisher publish
